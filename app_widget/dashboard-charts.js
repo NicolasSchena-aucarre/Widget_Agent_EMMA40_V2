@@ -92,9 +92,16 @@
     // appel explicite au moment où l'onglet redevient visible, le
     // graphique reste bloqué avec une taille/mise en page incorrecte.
     resizeAll: function () {
-      Object.keys(instances).forEach(function (id) {
-        if (instances[id]) instances[id].resize();
-      });
+      // Différé nécessaire : juste après avoir retiré "hidden" sur le
+      // conteneur, le navigateur n'a pas forcément fini son recalcul de
+      // mise en page — Chart.js mesurerait alors encore l'ancien
+      // conteneur caché. Même principe que le délai appliqué à la
+      // mini-carte Leaflet du widget Consultation (invalidateSize).
+      setTimeout(function () {
+        Object.keys(instances).forEach(function (id) {
+          if (instances[id]) instances[id].resize();
+        });
+      }, 50);
     }
   };
 })(window);
