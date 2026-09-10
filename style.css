@@ -1,0 +1,857 @@
+/* style.css — feuille de style unique, partagée par les 3 widgets
+   (formulaire/, dashboard/, consultation/). À placer à la racine du
+   dépôt ; chaque widget la référence via un chemin relatif
+   ("../style.css").
+
+   Chaque page doit poser une classe sur <body> pour indiquer de quel
+   widget il s'agit, utilisée ci-dessous pour les quelques règles qui
+   diffèrent réellement d'un widget à l'autre (même nom de classe,
+   apparence différente) :
+     <body class="view-formulaire">   (widget Formulaire terrain)
+     <body class="view-dashboard">    (widget Tableau de bord)
+     <body class="view-consultation"> (widget Consultation)
+
+   Tout ce qui n'est pas scopé ainsi s'applique identiquement partout. */
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+/* ===================================================================
+   1. Base commune (identique dans les 3 widgets d'origine)
+   =================================================================== */
+:root{
+  /* Palette alignée sur l'identité visuelle EMMA40 (Eaux Marensin
+     Maremne-Adour), extraite directement du logo fourni par le client :
+     --teal / --teal-deep sont dérivés du dégradé de la goutte (assombris
+     légèrement par rapport au logo pour garder un contraste de texte
+     suffisant en usage interface — vérifié : 4.2:1 et 7.7:1 sur blanc) ;
+     --teal-light et --accent reprennent les teintes exactes du logo,
+     réservées aux usages décoratifs (pas de texte dessus, contraste
+     insuffisant pour ça). */
+  --ink:#16302E;
+  --paper:#F2F8F7;
+  --panel:#FFFFFF;
+  --line:#D8E6E5;
+  --teal:#2F8886;
+  --teal-deep:#1E5C5B;
+  --teal-light:#6DC4C0;
+  --accent:#CEDD59;
+  --amber:#C4501E;
+  --ok:#3C7A5B;
+  --muted:#6B675C;
+  --focus:#1E5C5B;
+  font-size:16px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,.display{
+  font-family:'Barlow Condensed',system-ui,sans-serif;
+  font-weight:700;
+  letter-spacing:.01em;
+}
+
+/* ---- États de chargement (identiques partout) ---- */
+.state-screen{
+  padding:64px 20px;
+  text-align:center;
+  color:var(--muted);
+}
+.state-screen .spinner{
+  width:28px;height:28px;margin:0 auto 14px;
+  border:3px solid var(--line);
+  border-top-color:var(--teal);
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.version-tag{
+  text-align:right;
+  font-size:.7rem;
+  color:var(--muted);
+  margin:-8px 0 14px;
+}
+
+.btn-reset{
+  padding:7px 12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--panel);
+  color:var(--teal-deep);
+  font-family:inherit;
+  font-weight:600;
+  font-size:.82rem;
+  cursor:pointer;
+}
+.btn-reset:hover{background:var(--paper);}
+
+/* ---- Onglets segmentés : même apparence, deux noms de classe selon
+   le widget d'origine (aucune collision, donc pas besoin de scoper) --- */
+.segmented,
+.form-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  overflow-x:auto;
+  padding-bottom:2px;
+  margin-bottom:18px;
+}
+.segmented button,
+.form-tabs button{
+  flex:0 0 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:600;
+  letter-spacing:.01em;
+  background:var(--panel);
+  border:1px solid var(--line);
+  color:var(--ink);
+  padding:8px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background .15s,border-color .15s,color .15s;
+}
+/* Le widget Tableau de bord (.form-tabs) garde le libellé seul, en une
+   ligne, comme avant — la découverte par icône ne concerne que le
+   widget Formulaire, où le nombre de formulaires accessibles à un même
+   agent peut devenir grand. */
+.form-tabs button{
+  flex-direction:row;
+  font-size:1rem;
+}
+.segmented button .seg-icon{
+  font-size:1.4rem;
+  line-height:1;
+}
+.segmented button .seg-label{
+  font-size:.72rem;
+  max-width:72px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.segmented button.active,
+.form-tabs button.active{
+  background:var(--teal);
+  border-color:var(--teal);
+  color:#fff;
+}
+
+/* ---- Fenêtres modales : base commune (structure identique,
+   seule la largeur diffère — voir section scopée plus bas) ---- */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(18,54,52,.82);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  padding:24px;
+}
+.modal-overlay[hidden]{
+  display:none;
+}
+.modal-box{
+  background:var(--panel);
+  border-radius:12px;
+  padding:12px;
+  max-height:90vh;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.modal-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+}
+.btn-close{
+  width:32px;height:32px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--ink);
+  font-size:1rem;
+  cursor:pointer;
+}
+.btn-close:hover{background:var(--paper);}
+.btn-download{
+  padding:8px 15px;
+  border-radius:8px;
+  background:var(--teal);
+  color:#fff;
+  font-family:'Inter',system-ui,sans-serif;
+  font-weight:600;
+  font-size:.88rem;
+  border:none;
+  text-decoration:none;
+  cursor:pointer;
+}
+.btn-download:hover{background:var(--teal-deep);}
+
+/* ===================================================================
+   2. Règles spécifiques à chaque widget (même sélecteur, apparence
+   différente selon le contexte — d'où le scope par classe sur <body>)
+   =================================================================== */
+
+/* ---- .app : dimensions de la page, différentes par nature ---- */
+.view-formulaire .app{
+  max-width:560px;
+  margin:0 auto;
+  padding:18px 16px 100px; /* marge basse pour la barre d'action fixe */
+}
+.view-dashboard .app{
+  max-width:1100px;
+  margin:0 auto;
+  padding:18px 20px 60px;
+}
+.view-consultation .app{
+  max-width:1200px;
+  margin:0 auto;
+  padding:18px 20px 40px;
+  min-height:100vh;
+}
+
+/* ---- .badge : bandeau simple (dashboard/consultation) vs en-tête
+   riche avec identité de l'agent (formulaire) — deux composants
+   différents malgré le même nom, donc entièrement scopés ---- */
+.view-dashboard .badge,
+.view-consultation .badge{
+  background:var(--teal-deep);
+  color:#fff;
+  display:inline-block;
+  padding:8px 16px;
+  border-radius:8px;
+  font-family:'Barlow Condensed',system-ui,sans-serif;
+  font-weight:700;
+  font-size:1.05rem;
+  letter-spacing:.02em;
+}
+/* ---- En-tête avec logo : motif commun aux 3 widgets ---- */
+.header-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.brand-logo{
+  height:34px;
+  width:auto;
+  flex:none;
+  display:block;
+}
+.view-formulaire .badge .brand-logo{
+  height:38px;
+}
+
+.view-dashboard .btn-gear{
+  width:36px;height:36px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--teal-deep);
+  font-size:1.1rem;
+  cursor:pointer;
+}
+.view-dashboard .btn-gear:hover{background:var(--paper);}
+.view-dashboard .version-tag{margin:-12px 0 12px;}
+
+.view-formulaire .badge{
+  background:var(--teal-deep);
+  color:#EFEFE7;
+  border-radius:10px;
+  padding:14px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:16px;
+}
+.view-formulaire .badge .who .name{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1.4rem;
+  font-weight:700;
+  line-height:1.1;
+}
+.view-formulaire .badge .who .meta{
+  font-size:.8rem;
+  color:#B9C9C4;
+  margin-top:2px;
+}
+.view-formulaire .badge .dot{
+  width:9px;height:9px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 0 3px rgba(206,221,89,.3);
+  flex:none;
+}
+
+/* ---- .modal-box : largeur différente selon l'usage (agrandissement
+   de photo, large, vs panneau de réglages, plus étroit) ---- */
+.view-consultation .modal-box{
+  max-width:min(90vw, 900px);
+}
+.view-dashboard .modal-box{
+  width:min(90vw, 560px);
+}
+
+/* ===================================================================
+   3. Formulaire terrain — éléments propres à ce widget
+   =================================================================== */
+.view-formulaire .manual-picker{
+  background:#FFF7EA;
+  border:1px solid #E8CE9C;
+  border-radius:10px;
+  padding:12px 14px;
+  margin-bottom:16px;
+  font-size:.88rem;
+}
+.view-formulaire .manual-picker p{margin:0 0 8px;color:#7A5A18;}
+.view-formulaire .manual-picker select{width:100%;}
+
+.view-formulaire .panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:6px 16px 14px;
+  margin-bottom:16px;
+}
+.view-formulaire .panel h2{
+  font-size:1.05rem;
+  margin:14px 0 10px;
+  padding-left:10px;
+  border-left:3px solid var(--teal);
+}
+.view-formulaire .field{
+  margin-bottom:16px;
+}
+.view-formulaire .field label{
+  display:block;
+  font-size:.82rem;
+  font-weight:600;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.view-formulaire .field label .req{color:var(--amber);}
+.view-formulaire .field label .unit{
+  font-weight:400;
+  color:var(--muted);
+}
+.view-formulaire input[type=text],
+.view-formulaire input[type=number],
+.view-formulaire input[type=date],
+.view-formulaire textarea,
+.view-formulaire select{
+  width:100%;
+  font-family:'Inter',sans-serif;
+  font-size:.95rem;
+  color:var(--ink);
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px 12px;
+}
+.view-formulaire textarea{min-height:72px;resize:vertical;}
+.view-formulaire input:focus,
+.view-formulaire textarea:focus,
+.view-formulaire select:focus{
+  outline:2px solid var(--focus);
+  outline-offset:1px;
+}
+
+.view-formulaire .pills{display:flex;flex-wrap:wrap;gap:8px;}
+.view-formulaire .pill{
+  border:1px solid var(--line);
+  background:var(--paper);
+  color:var(--ink);
+  border-radius:20px;
+  padding:8px 14px;
+  font-size:.88rem;
+  cursor:pointer;
+}
+.view-formulaire .pill.active{
+  background:var(--teal-deep);
+  border-color:var(--teal-deep);
+  color:#fff;
+}
+
+.view-formulaire .toggle-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px 12px;
+}
+.view-formulaire .toggle-row .field-label{font-size:.9rem;font-weight:500;}
+.view-formulaire .switch{
+  width:42px;height:24px;border-radius:14px;
+  background:#C9C2AC;
+  position:relative;
+  cursor:pointer;
+  flex:none;
+  transition:background .15s;
+}
+.view-formulaire .switch.on{background:var(--teal);}
+.view-formulaire .switch .knob{
+  position:absolute;top:2px;left:2px;
+  width:20px;height:20px;border-radius:50%;
+  background:#fff;
+  transition:left .15s;
+  box-shadow:0 1px 2px rgba(0,0,0,.3);
+}
+.view-formulaire .switch.on .knob{left:20px;}
+.view-formulaire .toggle-row.urgent .switch.on{background:var(--amber);}
+
+.view-formulaire input[type=file]{
+  width:100%;
+  font-size:.85rem;
+  padding:8px;
+  border:1px dashed var(--line);
+  border-radius:8px;
+  background:var(--paper);
+}
+
+.view-formulaire .actionbar{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  background:var(--paper);
+  border-top:1px solid var(--line);
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  display:flex;
+  gap:10px;
+  justify-content:center;
+}
+.view-formulaire .actionbar .inner{max-width:560px;width:100%;display:flex;gap:10px;}
+.view-formulaire button.primary{
+  flex:1;
+  background:var(--teal-deep);
+  color:#fff;
+  border:none;
+  border-radius:9px;
+  padding:14px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;
+  font-size:1.1rem;
+  letter-spacing:.02em;
+  cursor:pointer;
+}
+.view-formulaire button.primary:disabled{opacity:.55;cursor:default;}
+.view-formulaire button.ghost{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--muted);
+  border-radius:9px;
+  padding:14px 16px;
+  font-size:.9rem;
+  cursor:pointer;
+}
+
+.view-formulaire .toast{
+  position:fixed;
+  left:16px;right:16px;
+  top:16px;
+  max-width:528px;
+  margin:0 auto;
+  border-radius:10px;
+  padding:12px 14px;
+  font-size:.9rem;
+  z-index:50;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);
+}
+.view-formulaire .toast.success{background:#E4F3EA;color:var(--ok);border:1px solid #BFE3CD;}
+.view-formulaire .toast.error{background:#FBE9E4;color:var(--amber);border:1px solid #F0C2AE;}
+
+.view-formulaire .address-wrap{position:relative;}
+.view-formulaire .address-suggestions{
+  position:absolute;
+  left:0;right:0;top:calc(100% + 4px);
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  box-shadow:0 6px 16px rgba(0,0,0,.12);
+  max-height:220px;
+  overflow-y:auto;
+  z-index:30;
+  display:none;
+}
+.view-formulaire .address-suggestions.open{display:block;}
+.view-formulaire .address-suggestions .sugg-item{
+  padding:9px 12px;
+  font-size:.88rem;
+  cursor:pointer;
+  border-bottom:1px solid var(--line);
+}
+.view-formulaire .address-suggestions .sugg-item:last-child{border-bottom:none;}
+.view-formulaire .address-suggestions .sugg-item:hover,
+.view-formulaire .address-suggestions .sugg-item.highlighted{background:var(--paper);}
+.view-formulaire .address-suggestions .sugg-empty{
+  padding:9px 12px;
+  font-size:.85rem;
+  color:var(--muted);
+}
+.view-formulaire .address-status{
+  font-size:.75rem;
+  color:var(--muted);
+  margin-top:4px;
+}
+
+.view-formulaire .empty-note{
+  color:var(--muted);
+  font-size:.9rem;
+  text-align:center;
+  padding:24px 10px;
+}
+
+/* ===================================================================
+   4. Tableau de bord — éléments propres à ce widget
+   =================================================================== */
+.view-dashboard .filters{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  gap:14px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:14px 16px;
+  margin-bottom:20px;
+}
+.view-dashboard .filter-field{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:180px;
+}
+.view-dashboard .filter-field label{
+  font-size:.78rem;
+  color:var(--muted);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+.view-dashboard .filter-field select{
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:inherit;
+  font-size:.92rem;
+}
+.view-dashboard .filter-field select:focus{
+  outline:2px solid var(--focus);
+  outline-offset:1px;
+}
+.view-dashboard .filter-count{
+  margin-left:auto;
+  align-self:center;
+  color:var(--muted);
+  font-size:.85rem;
+}
+
+.view-dashboard h2{
+  margin:0 0 12px;
+  font-size:1.15rem;
+  color:var(--teal-deep);
+}
+
+.view-dashboard .chart-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+  gap:18px;
+}
+.view-dashboard .chart-grid[hidden]{
+  display:none;
+}
+.view-dashboard .chart-card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 1px 3px rgba(22,48,46,.06);
+  position:relative;
+}
+.view-dashboard .chart-wrap{
+  position:relative;
+  height:280px;
+}
+.view-dashboard .chart-empty{
+  position:absolute;
+  inset:44px 16px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  font-size:.9rem;
+  text-align:center;
+}
+.view-dashboard .chart-empty[hidden]{
+  display:none;
+}
+
+.view-dashboard .stat-card{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  min-height:120px;
+  text-align:center;
+}
+.view-dashboard .stat-card .stat-value{
+  font-family:'Barlow Condensed',system-ui,sans-serif;
+  font-weight:700;
+  font-size:2.4rem;
+  color:var(--teal-deep);
+  line-height:1;
+}
+.view-dashboard .stat-card .stat-sub{
+  margin-top:8px;
+  color:var(--muted);
+  font-size:.85rem;
+}
+
+.view-dashboard .settings-body{
+  overflow-y:auto;
+  flex:1 1 auto;
+}
+.view-dashboard .settings-group{
+  margin-bottom:16px;
+}
+.view-dashboard .settings-group h3{
+  margin:0 0 8px;
+  font-size:.95rem;
+  color:var(--teal-deep);
+  font-family:'Barlow Condensed',system-ui,sans-serif;
+  font-weight:700;
+  border-bottom:1px solid var(--line);
+  padding-bottom:4px;
+}
+.view-dashboard .settings-field{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:5px 0;
+  font-size:.9rem;
+}
+.view-dashboard .settings-field label{cursor:pointer;}
+.view-dashboard .settings-empty{
+  color:var(--muted);
+  font-size:.85rem;
+  font-style:italic;
+}
+.view-dashboard .settings-footer{
+  display:flex;
+  justify-content:flex-end;
+  border-top:1px solid var(--line);
+  padding-top:12px;
+}
+
+/* ===================================================================
+   5. Consultation — éléments propres à ce widget
+   =================================================================== */
+.view-consultation .main{
+  display:flex;
+  gap:18px;
+  align-items:flex-start;
+}
+.view-consultation .list-pane{
+  flex:0 0 340px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+}
+.view-consultation .list-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 14px;
+  border-bottom:1px solid var(--line);
+  font-size:.85rem;
+  color:var(--muted);
+}
+.view-consultation .list{
+  max-height:75vh;
+  overflow-y:auto;
+}
+.view-consultation .list-item{
+  padding:12px 14px;
+  border-bottom:1px solid var(--line);
+  cursor:pointer;
+}
+.view-consultation .list-item:hover{background:var(--paper);}
+.view-consultation .list-item.active{
+  background:var(--teal);
+  color:#fff;
+}
+.view-consultation .list-item .li-title{
+  font-family:'Barlow Condensed',system-ui,sans-serif;
+  font-weight:700;
+  font-size:1.05rem;
+  margin-bottom:2px;
+}
+.view-consultation .list-item .li-sub{
+  font-size:.8rem;
+  opacity:.85;
+}
+.view-consultation .list-item.active .li-sub{color:#fff;}
+.view-consultation .list-empty{
+  padding:24px 14px;
+  text-align:center;
+  color:var(--muted);
+  font-size:.9rem;
+}
+
+.view-consultation .detail-pane{
+  flex:1 1 auto;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:20px;
+  min-height:300px;
+}
+.view-consultation .detail-empty{
+  color:var(--muted);
+  text-align:center;
+  padding:60px 20px;
+}
+
+.view-consultation .detail-header{
+  margin-bottom:16px;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--line);
+}
+.view-consultation .detail-header h2{
+  margin:0 0 6px;
+  font-size:1.4rem;
+  color:var(--teal-deep);
+}
+.view-consultation .detail-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  font-size:.85rem;
+  color:var(--muted);
+}
+.view-consultation .detail-meta span b{color:var(--ink);font-weight:600;}
+
+.view-consultation .field-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px 12px;
+  padding:10px 0;
+  border-bottom:1px solid var(--line);
+}
+.view-consultation .field-row:last-child{border-bottom:none;}
+.view-consultation .field-label{
+  flex:0 0 220px;
+  font-size:.8rem;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  font-weight:600;
+}
+.view-consultation .field-value{
+  flex:1 1 260px;
+  font-size:.95rem;
+  word-break:break-word;
+}
+.view-consultation .field-value.empty{color:var(--muted);font-style:italic;}
+.view-consultation .field-value.bool-yes{color:var(--ok);font-weight:600;}
+.view-consultation .field-value.bool-no{color:var(--muted);}
+
+.view-consultation .attachment-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.view-consultation .attachment-item{
+  position:relative;
+  width:72px;height:72px;
+}
+.view-consultation .attachment-dl{
+  position:absolute;
+  bottom:2px;right:2px;
+  width:22px;height:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(18,54,52,.75);
+  color:#fff;
+  border-radius:6px;
+  font-size:.75rem;
+  text-decoration:none;
+  line-height:1;
+}
+.view-consultation .attachment-dl:hover{background:var(--teal-deep);}
+
+.view-consultation .minimap-wrap{
+  margin-top:16px;
+}
+.view-consultation .minimap{
+  width:100%;
+  height:220px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:var(--paper);
+}
+.view-consultation .minimap-status{
+  margin-top:6px;
+  font-size:.8rem;
+  color:var(--muted);
+  text-align:right;
+}
+.view-consultation .minimap-status a{
+  color:var(--teal-deep);
+  font-weight:600;
+}
+.view-consultation .attachment-thumb{
+  width:100%;height:100%;
+  object-fit:cover;
+  border-radius:8px;
+  border:1px solid var(--line);
+  cursor:pointer;
+  transition:opacity .15s;
+  display:block;
+}
+.view-consultation .attachment-thumb:hover{
+  opacity:.85;
+}
+.view-consultation .attachment-link{
+  font-size:.85rem;
+  color:var(--teal-deep);
+}
+
+.view-consultation #modal-image{
+  max-width:100%;
+  max-height:calc(90vh - 60px);
+  object-fit:contain;
+  border-radius:6px;
+  display:block;
+  margin:0 auto;
+}
+
+@media (max-width:800px){
+  .view-consultation .main{flex-direction:column;}
+  .view-consultation .list-pane{flex:1 1 auto;width:100%;}
+  .view-consultation .list{max-height:40vh;}
+}
+
+@media (max-width:640px){
+  .view-dashboard .app{padding:14px 12px 40px;}
+  .view-dashboard .filters{flex-direction:column;align-items:stretch;}
+  .view-dashboard .filter-count{margin-left:0;}
+  .header-row{flex-wrap:wrap;}
+}

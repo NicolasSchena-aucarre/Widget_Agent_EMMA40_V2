@@ -1,0 +1,137 @@
+/* app-shell.css — barre de navigation interne au widget fusionné
+   (Formulaire terrain / Tableau de bord / Consultation réunis en une
+   seule page Grist). Adapté de l'ancien nav.css : même apparence,
+   mais les boutons changent d'écran affiché (JS) au lieu de naviguer
+   vers une autre page Grist.
+
+   Deux modes, selon la largeur d'écran réelle de l'appareil (pas la
+   largeur du widget lui-même) :
+   - Ordinateur (≥ 900px)      : rail vertical fixé à gauche.
+   - Tablette / téléphone (< 900px) : barre d'onglets fixée en bas,
+     à la manière d'une application mobile — plus accessible au pouce
+     et moins coûteuse en espace horizontal qu'un tiroir latéral, ce
+     qui compte sur les petits écrans où les agents travaillent. */
+
+:root{
+  --nav-ink:#16302E;
+  --nav-paper:#F2F8F7;
+  --nav-panel:#FFFFFF;
+  --nav-line:#D8E6E5;
+  --nav-teal:#2F8886;
+  --nav-teal-deep:#1E5C5B;
+  --nav-muted:#6B675C;
+  --nav-width:78px;
+  --nav-height-mobile:64px;
+}
+
+#app-nav{
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:var(--nav-teal-deep);
+  display:flex;
+  z-index:500;
+  box-shadow:0 2px 6px rgba(18,54,52,.15);
+}
+
+#app-nav button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:8px;
+  color:#CFE3DD;
+  font-family:inherit;
+  font-weight:600;
+  cursor:pointer;
+  transition:background .15s,color .15s;
+}
+#app-nav button:hover{
+  background:rgba(255,255,255,.08);
+  color:#fff;
+}
+#app-nav button.active{
+  background:var(--nav-teal);
+  color:#fff;
+}
+#app-nav button .nav-icon{
+  line-height:1;
+}
+
+/* ===================================================================
+   Ordinateur : rail vertical fixé à gauche
+   =================================================================== */
+@media (min-width: 900px){
+  #app-nav{
+    position:fixed;
+    top:0; left:0; bottom:0;
+    width:var(--nav-width);
+    flex-direction:column;
+    align-items:stretch;
+    padding:14px 6px;
+    gap:8px;
+  }
+  #app-nav button{
+    flex-direction:column;
+    padding:10px 4px;
+  }
+  #app-nav button .nav-icon{
+    font-size:1.5rem;
+  }
+  #app-nav button .nav-label{
+    font-size:.66rem;
+    text-align:center;
+    line-height:1.15;
+  }
+  /* Le contenu de la page est décalé vers la droite via un padding sur
+     body — .app garde son propre margin:0 auto et se recentre alors
+     naturellement dans l'espace restant, sans qu'on ait besoin de
+     toucher aux règles de largeur propres à chaque widget. */
+  body{
+    padding-left:var(--nav-width) !important;
+  }
+  /* Sur le widget Formulaire, la barre d'action est fixée au viewport
+     (pas à body) : le padding ci-dessus ne la décale pas toute seule,
+     il faut l'ajuster explicitement. */
+  .view-formulaire .actionbar{
+    left:var(--nav-width) !important;
+  }
+}
+
+/* ===================================================================
+   Tablette / téléphone : barre d'onglets fixée en bas
+   =================================================================== */
+@media (max-width: 899px){
+  #app-nav{
+    position:fixed;
+    left:0; right:0; bottom:0; top:auto;
+    flex-direction:row;
+    justify-content:space-around;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    box-shadow:0 -2px 6px rgba(18,54,52,.15);
+  }
+  #app-nav button{
+    flex-direction:column;
+    gap:2px;
+    padding:6px 8px;
+    font-size:.68rem;
+    flex:1 1 0;
+  }
+  #app-nav button .nav-icon{
+    font-size:1.25rem;
+  }
+  /* Espace en bas pour ne pas que le contenu passe sous la barre fixe. */
+  body{
+    padding-bottom:var(--nav-height-mobile) !important;
+  }
+  /* Sur le widget Formulaire, la barre d'action (Effacer / Enregistrer)
+     est elle aussi fixée en bas de l'écran — sans ce décalage, elle se
+     retrouverait exactement sous la barre d'onglets du menu, invisible
+     derrière elle plutôt qu'au-dessus. */
+  .view-formulaire .actionbar{
+    bottom:var(--nav-height-mobile) !important;
+  }
+  .view-formulaire .app{
+    padding-bottom:calc(100px + var(--nav-height-mobile)) !important;
+  }
+}

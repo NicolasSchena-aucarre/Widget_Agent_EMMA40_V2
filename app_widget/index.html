@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EMMA40 — Interventions</title>
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="../style.css" />
+<link rel="stylesheet" href="../app-shell.css" />
+</head>
+<body>
+  <!-- Menu interne : peuplé en JS par app-shell.js, une fois l'accès de
+       chaque écran vérifié (voir canAccess dans ce fichier). -->
+  <nav id="app-nav"></nav>
+
+  <!-- ============================= -->
+  <!-- Écran : Formulaire terrain    -->
+  <!-- ============================= -->
+  <div id="screen-formulaire" class="view-formulaire" hidden>
+    <div id="f-app" class="app">
+      <div class="state-screen"><div class="spinner"></div>Chargement du formulaire…</div>
+    </div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- Écran : Tableau de bord       -->
+  <!-- ============================= -->
+  <div id="screen-dashboard" class="view-dashboard" hidden>
+    <div class="app">
+      <div class="header-row">
+        <img class="brand-logo" src="../logo-icon.png" alt="EMMA40" />
+        <div class="badge">Tableau de bord — Interventions</div>
+        <button id="d-btn-settings" class="btn-gear" type="button" title="Choisir les champs affichés dans les graphiques">⚙</button>
+      </div>
+      <div class="version-tag" id="d-version-tag"></div>
+
+      <div id="d-state-screen" class="state-screen">
+        <div class="spinner"></div>
+        Chargement des données…
+      </div>
+
+      <div id="d-dashboard" class="dashboard" hidden>
+        <div class="filters" id="d-filters">
+          <div class="filter-field">
+            <label for="d-filter-site">Site</label>
+            <select id="d-filter-site">
+              <option value="">Tous les sites</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="d-filter-service">Service</label>
+            <select id="d-filter-service">
+              <option value="">Tous les services</option>
+            </select>
+          </div>
+          <button id="d-filter-reset" class="btn-reset" type="button">Réinitialiser</button>
+          <button id="d-btn-refresh" class="btn-reset" type="button">↻ Rafraîchir</button>
+          <div class="filter-count" id="d-filter-count"></div>
+        </div>
+
+        <div class="form-tabs" id="d-form-tabs">
+          <!-- Peuplé dynamiquement : "Tous" + un bouton par formulaire actif -->
+        </div>
+
+        <div class="chart-grid" id="d-charts-general">
+          <div class="chart-card">
+            <h2>Répartition par formulaire</h2>
+            <div class="chart-wrap"><canvas id="d-chart-formulaire"></canvas></div>
+            <div class="chart-empty" id="d-empty-formulaire" hidden>Aucune donnée pour cette sélection</div>
+          </div>
+          <div class="chart-card">
+            <h2>Répartition par site</h2>
+            <div class="chart-wrap"><canvas id="d-chart-site"></canvas></div>
+            <div class="chart-empty" id="d-empty-site" hidden>Aucune donnée pour cette sélection</div>
+          </div>
+          <div class="chart-card">
+            <h2>Répartition par service</h2>
+            <div class="chart-wrap"><canvas id="d-chart-service"></canvas></div>
+            <div class="chart-empty" id="d-empty-service" hidden>Aucune donnée pour cette sélection</div>
+          </div>
+        </div>
+
+        <div class="chart-grid" id="d-charts-formulaire" hidden>
+          <!-- Peuplé dynamiquement selon le formulaire sélectionné -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Panneau de réglages : imbriqué dans l'écran Dashboard (et non
+         plus au niveau de la page) pour qu'il soit masqué avec le
+         reste si on change d'écran pendant qu'il est ouvert. -->
+    <div class="modal-overlay" id="d-settings-overlay" hidden>
+      <div class="modal-box">
+        <div class="modal-toolbar">
+          <h2 style="margin:0;font-size:1.1rem;">Champs affichés dans les graphiques</h2>
+          <button id="d-settings-close" class="btn-close" type="button" aria-label="Fermer">✕</button>
+        </div>
+        <div class="settings-body" id="d-settings-body">
+          <div class="state-screen" style="padding:24px 0;"><div class="spinner"></div>Chargement des champs…</div>
+        </div>
+        <div class="settings-footer">
+          <button id="d-settings-save" class="btn-download" type="button">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- Écran : Consultation          -->
+  <!-- ============================= -->
+  <div id="screen-consultation" class="view-consultation" hidden>
+    <div class="app">
+      <div class="header-row">
+        <img class="brand-logo" src="../logo-icon.png" alt="EMMA40" />
+        <div class="badge">Consultation des interventions</div>
+      </div>
+      <div class="version-tag" id="c-version-tag"></div>
+
+      <div id="c-state-screen" class="state-screen">
+        <div class="spinner"></div>
+        Chargement des données…
+      </div>
+
+      <div id="c-main" class="main" hidden>
+        <div class="list-pane">
+          <div class="list-header">
+            <span id="c-list-count"></span>
+            <button id="c-btn-refresh" class="btn-reset" type="button">↻ Rafraîchir</button>
+          </div>
+          <div class="list" id="c-list"></div>
+        </div>
+
+        <div class="detail-pane" id="detail-pane">
+          <div class="detail-empty" id="c-detail-empty">
+            Sélectionnez une réponse dans la liste pour en voir le détail.
+          </div>
+          <div class="detail-content" id="c-detail-content" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fenêtre modale pour agrandir une pièce jointe — imbriquée dans
+         l'écran Consultation pour la même raison que le panneau de
+         réglages du Dashboard ci-dessus. -->
+    <div class="modal-overlay" id="c-modal-overlay" hidden>
+      <div class="modal-box">
+        <div class="modal-toolbar">
+          <a id="c-modal-download" class="btn-download" href="#" download>⬇ Télécharger</a>
+          <button id="c-modal-close" class="btn-close" type="button" aria-label="Fermer">✕</button>
+        </div>
+        <img id="c-modal-image" src="" alt="Pièce jointe agrandie" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       Scripts — ordre important :
+       1. grist-shared.js  : utilitaires REST partagés (Formulaire + Consultation)
+       2. *-app.js / *-data.js / *-charts.js : les 3 écrans, chacun dans
+          sa propre portée, exposant window.FormulaireApp / DashboardApp /
+          ConsultationApp (voir chaque fichier). Aucun ne s'exécute
+          automatiquement : app-shell.js décide quand appeler .init().
+       3. app-shell.js     : appelle grist.ready() UNE SEULE fois pour tout
+          le widget, détermine les écrans accessibles, gère le menu et
+          l'affichage/masquage des écrans.
+       =================================================================== -->
+  <script src="../grist-shared.js"></script>
+
+  <script src="formulaire-app.js"></script>
+
+  <script src="dashboard-data.js"></script>
+  <script src="dashboard-charts.js"></script>
+  <script src="dashboard-app.js"></script>
+
+  <script src="consultation-data.js"></script>
+  <script src="consultation-app.js"></script>
+
+  <script src="app-shell.js"></script>
+</body>
+</html>
