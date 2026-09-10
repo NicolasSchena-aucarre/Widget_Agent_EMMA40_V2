@@ -20,7 +20,9 @@
     filterService: null,    // id de service sélectionné, ou null = tous
     selectedFormulaireId: null, // null = vue générale ("Tous")
     technicalRowsCache: {},  // Table_Technique -> lignes déjà récupérées (rafraîchi au clic "Rafraîchir")
-    excludedFields: {}       // Table_Technique -> [colId, ...] à ne pas afficher, réglable via ⚙
+    excludedFields: {},      // Table_Technique -> [colId, ...] à ne pas afficher, réglable via ⚙
+    chartsRendered: false,   // voir loadAndRender / onShow : on évite de créer un Chart.js pendant que l'écran est masqué
+    dataLoaded: false        // vrai une fois que loadAndRender a réussi au moins une fois
   };
 
   function init() {
@@ -166,6 +168,7 @@
       state.formulaireLabels = data.formulaireLabels;
       state.serviceLabels = data.serviceLabels;
       state.technicalRowsCache = {}; // les données ont pu changer, on ne garde pas l'ancien cache
+      state.dataLoaded = true;
 
       document.getElementById('d-state-screen').hidden = true;
       document.getElementById('d-dashboard').hidden = false;
@@ -173,7 +176,21 @@
       populateSiteFilter();
       populateServiceFilter();
       populateFormTabs();
-      renderAll();
+
+      // On ne crée les graphiques Chart.js que si l'écran est réellement
+      // visible à cet instant. Cet écran peut être initialisé alors qu'il
+      // est encore masqué (chargement en arrière-plan des écrans non
+      // actifs, voir app-shell.js) : Chart.js mesure très mal un canvas
+      // caché au moment de sa création (taille figée, animation d'entrée
+      // faussée) — plutôt que de corriger ça après coup, on retarde
+      // simplement la création elle-même jusqu'au premier affichage réel
+      // (voir onShow ci-dessous), exactement comme le fait déjà, sans
+      // aucun problème, la vue par formulaire.
+      var screenEl = document.getElementById('screen-dashboard');
+      if (!screenEl || !screenEl.hidden) {
+        renderAll();
+        state.chartsRendered = true;
+      }
     } catch (err) {
       console.error('[Tableau de bord] échec du chargement', err);
       document.getElementById('d-state-screen').textContent =
@@ -429,11 +446,18 @@
   window.DashboardApp = {
     init: init,
     // Appelé par app-shell.js à chaque fois que cet écran redevient
-    // visible (pas seulement au tout premier chargement) — corrige la
-    // taille des graphiques Chart.js si celui-ci a été initialisé
-    // pendant que l'écran était encore masqué.
+    // visible. Deux cas : soit les graphiques n'ont encore jamais été
+    // créés (initialisation faite pendant que l'écran était masqué,
+    // voir loadAndRender) — on les crée maintenant, pour de bon, pendant
+    // que l'écran est réellement visible ; soit ils existent déjà, et un
+    // simple resize() suffit comme filet de sécurité.
     onShow: function () {
-      if (window.DashboardCharts) DashboardCharts.resizeAll();
+      if (!state.chartsRendered && state.dataLoaded) {
+        renderAll();
+        state.chartsRendered = true;
+      } else if (window.DashboardCharts) {
+        DashboardCharts.resizeAll();
+      }
     }
   };
 })();
