@@ -83,6 +83,18 @@
   }
 
   global.DashboardCharts = {
-    renderBarChart: renderBarChart
+    renderBarChart: renderBarChart,
+    // Force chaque graphique existant à recalculer sa taille — utile
+    // quand un graphique a été créé pendant que son onglet était encore
+    // masqué (voir app-shell.js : les écrans non actifs se chargent en
+    // arrière-plan dès le démarrage). Chart.js ne peut pas mesurer
+    // correctement un canvas caché au moment de sa création ; sans cet
+    // appel explicite au moment où l'onglet redevient visible, le
+    // graphique reste bloqué avec une taille/mise en page incorrecte.
+    resizeAll: function () {
+      Object.keys(instances).forEach(function (id) {
+        if (instances[id]) instances[id].resize();
+      });
+    }
   };
 })(window);
