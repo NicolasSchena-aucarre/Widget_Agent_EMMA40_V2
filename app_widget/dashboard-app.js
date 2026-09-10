@@ -426,5 +426,14 @@
   // moment choisi plutôt qu'automatiquement au chargement du fichier —
   // nécessaire puisque ce script coexiste maintenant avec 2 autres
   // écrans sur la même page.
-  window.DashboardApp = { init: init };
+  window.DashboardApp = {
+    init: init,
+    // Appelé par app-shell.js à chaque fois que cet écran redevient
+    // visible (pas seulement au tout premier chargement) — corrige la
+    // taille des graphiques Chart.js si celui-ci a été initialisé
+    // pendant que l'écran était encore masqué.
+    onShow: function () {
+      if (window.DashboardCharts) DashboardCharts.resizeAll();
+    }
+  };
 })();
