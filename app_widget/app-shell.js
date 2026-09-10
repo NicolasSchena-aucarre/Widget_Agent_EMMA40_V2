@@ -71,18 +71,26 @@
     currentKey = key;
     updateActiveButton();
 
+    var screen = SCREENS.filter(function (s) { return s.key === key; })[0];
+    if (!screen) return;
+    var app = screen.app();
+
     // Initialisation "au premier affichage" : chaque écran ne démarre
     // son propre chargement de données qu'une seule fois, quel que
     // soit le nombre de fois où on y revient ensuite.
-    var screen = SCREENS.filter(function (s) { return s.key === key; })[0];
-    if (screen && !initialized[key]) {
+    if (!initialized[key]) {
       initialized[key] = true;
-      var app = screen.app();
       if (app && typeof app.init === 'function') {
         app.init();
       } else {
         console.error('[app-shell] ' + key + 'App introuvable ou sans méthode init() au moment de l’affichage.');
       }
+    } else if (app && typeof app.onShow === 'function') {
+      // Écran déjà initialisé (par exemple chargé en arrière-plan pendant
+      // qu'il était masqué) : on lui laisse une chance de corriger tout
+      // ce qui dépend de sa visibilité réelle (typiquement, la taille
+      // d'un graphique Chart.js — voir dashboard-app.js).
+      app.onShow();
     }
   }
 
