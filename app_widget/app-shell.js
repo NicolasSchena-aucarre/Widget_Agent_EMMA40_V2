@@ -11,28 +11,56 @@
 (function () {
   'use strict';
 
+  // -----------------------------------------------------------------
+  // Seul endroit du widget où les noms de rôle apparaissent. Si un rôle
+  // est un jour renommé (ex. "Agent" -> "Technicien"), c'est ici — et
+  // uniquement ici côté widget — qu'il faut le répercuter. Les Règles
+  // d'accès du document, elles, devront toujours être corrigées à la
+  // main séparément : Grist ne propage pas un tel renommage tout seul,
+  // ni dans les règles ni dans le code d'un widget.
+  // -----------------------------------------------------------------
+  var ROLE = {
+    AGENT: 'Agent',
+    MANAGER: 'Manager',
+    RESP_SITE: 'Responsable_Site',
+    DIRECTION: 'Direction'
+  };
+
   var SCREENS = [
-    { key: 'formulaire', label: 'Formulaire', icon: '📝', gateTable: 'Portail_Agent', app: function () { return window.FormulaireApp; } },
-    { key: 'dashboard', label: 'Tableau de bord', icon: '📊', gateTable: 'Postes', app: function () { return window.DashboardApp; } },
-    { key: 'consultation', label: 'Consultation', icon: '🔍', gateTable: null, app: function () { return window.ConsultationApp; } }
+    { key: 'formulaire', label: 'Formulaire', icon: '📝', visibleFor: [ROLE.AGENT], app: function () { return window.FormulaireApp; } },
+    { key: 'dashboard', label: 'Tableau de bord', icon: '📊', visibleFor: [ROLE.MANAGER, ROLE.RESP_SITE, ROLE.DIRECTION], app: function () { return window.DashboardApp; } },
+    { key: 'consultation', label: 'Consultation', icon: '🔍', visibleFor: null, app: function () { return window.ConsultationApp; } } // null = tous les rôles
   ];
 
   var initialized = {}; // key -> booléen, pour n'appeler .init() qu'une seule fois par écran
   var currentKey = null;
 
   // ---------------------------------------------------------------
-  // Vérification d'accès (même principe que l'ancien nav.js) : une
-  // table vide ou illisible pour l'utilisateur connecté = onglet masqué.
+  // Détermination du rôle et visibilité des écrans
   // ---------------------------------------------------------------
-  async function canAccess(screen) {
-    if (!screen.gateTable) return true;
+  // Lit UNE seule fois le rôle de la personne connectée, via sa propre
+  // ligne Utilisateur (Règle d'accès : rec.Email == user.Email → +R,
+  // chacun ne lit que sa propre ligne, jamais celle des autres). En cas
+  // d'échec (règle absente, aucune ligne trouvée...), on retombe sur
+  // null : seuls les écrans ouverts à tous (visibleFor: null) restent
+  // alors visibles — un repli prudent plutôt qu'un accès accordé par
+  // erreur.
+  async function fetchMyRole() {
     try {
-      var table = await grist.docApi.fetchTable(screen.gateTable);
-      return table.id.length > 0;
+      var table = await grist.docApi.fetchTable('Utilisateur');
+      if (!table.id.length) {
+        console.error('[app-shell] aucune ligne Utilisateur lisible pour cette personne — vérifiez la règle "rec.Email == user.Email" sur cette table.');
+        return null;
+      }
+      return table.Role[0] || null;
     } catch (err) {
-      console.error('[app-shell] accès refusé (ou vérification impossible) pour "' + screen.key + '" (table ' + screen.gateTable + ')', err);
-      return false;
+      console.error('[app-shell] échec de la lecture du rôle', err);
+      return null;
     }
+  }
+
+  function canAccess(screen, myRole) {
+    return !screen.visibleFor || screen.visibleFor.indexOf(myRole) !== -1;
   }
 
   function escapeHtml(s) {
@@ -71,34 +99,26 @@
     currentKey = key;
     updateActiveButton();
 
-    var screen = SCREENS.filter(function (s) { return s.key === key; })[0];
-    if (!screen) return;
-    var app = screen.app();
-
     // Initialisation "au premier affichage" : chaque écran ne démarre
     // son propre chargement de données qu'une seule fois, quel que
     // soit le nombre de fois où on y revient ensuite.
-    if (!initialized[key]) {
+    var screen = SCREENS.filter(function (s) { return s.key === key; })[0];
+    if (screen && !initialized[key]) {
       initialized[key] = true;
+      var app = screen.app();
       if (app && typeof app.init === 'function') {
         app.init();
       } else {
         console.error('[app-shell] ' + key + 'App introuvable ou sans méthode init() au moment de l’affichage.');
       }
-    } else if (app && typeof app.onShow === 'function') {
-      // Écran déjà initialisé (par exemple chargé en arrière-plan pendant
-      // qu'il était masqué) : on lui laisse une chance de corriger tout
-      // ce qui dépend de sa visibilité réelle (typiquement, la taille
-      // d'un graphique Chart.js — voir dashboard-app.js).
-      app.onShow();
     }
   }
 
   async function boot() {
     grist.ready({ requiredAccess: 'full' });
 
-    var accessFlags = await Promise.all(SCREENS.map(canAccess));
-    var visibleScreens = SCREENS.filter(function (s, i) { return accessFlags[i]; });
+    var myRole = await fetchMyRole();
+    var visibleScreens = SCREENS.filter(function (s) { return canAccess(s, myRole); });
 
     if (!visibleScreens.length) {
       document.body.innerHTML = '<div class="state-screen">Aucun écran accessible avec ce compte.</div>';
