@@ -45,9 +45,22 @@
   // null : seuls les écrans ouverts à tous (visibleFor: null) restent
   // alors visibles — un repli prudent plutôt qu'un accès accordé par
   // erreur.
+  // Valeur spéciale : ni un rôle métier, ni null — signale un accès plus
+  // large que "sa propre ligne uniquement" (typiquement le Propriétaire,
+  // qui voit toutes les lignes grâce à son accès total sur cette table).
+  var ALL_ACCESS = '__all_access__';
+
   async function fetchMyRole() {
     try {
       var table = await grist.docApi.fetchTable('Utilisateur');
+      if (table.id.length > 1) {
+        // Une personne au rôle métier standard ne voit jamais que sa
+        // propre ligne (rec.Email == user.Email) — en voir plusieurs
+        // signale un accès plus large (Propriétaire), qui doit voir
+        // tous les écrans, cohérent avec son accès total du reste du
+        // document.
+        return ALL_ACCESS;
+      }
       if (!table.id.length) {
         console.error('[app-shell] aucune ligne Utilisateur lisible pour cette personne — vérifiez la règle "rec.Email == user.Email" sur cette table.');
         return null;
@@ -60,6 +73,7 @@
   }
 
   function canAccess(screen, myRole) {
+    if (myRole === ALL_ACCESS) return true;
     return !screen.visibleFor || screen.visibleFor.indexOf(myRole) !== -1;
   }
 
